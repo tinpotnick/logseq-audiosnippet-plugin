@@ -3,20 +3,32 @@ name: Publish plugin
 on:
   push:
     tags:
-      - 'v*.*.*'  # Triggers when you push a version tag like v1.0.0
+      - "v*.*.*" # semver
+
+env:
+  PLUGIN_NAME: logseq-plugin-audiosnippet
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v1
         with:
-          node-version: 18
-      - run: npm ci
-      - run: npm run build
-      - run: npx @logseq/release
+          node-version: "16.x" # You might need to adjust this value to your own version
+      - name: Build
+        id: build
+        run: |
+          zip -r ${{ env.PLUGIN_NAME }}.zip .
+          tar -cvzf ${{ env.PLUGIN_NAME }}.tar.gz -C ${{ env.PLUGIN_NAME }} .
+          ls
+          echo "::set-output name=tag_name::$(git tag --sort version:refname | tail -n 1)"
+
+      - name: Upload release binaries
+        uses: alexellis/upload-assets@0.4.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+        with:
+          asset_paths: '["${{ env.PLUGIN_NAME }}.zip", "${{ env.PLUGIN_NAME }}.tar.gz"]'
