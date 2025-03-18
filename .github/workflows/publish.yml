@@ -28,3 +28,5 @@ jobs:
         with:
           artifacts: "${{ env.PLUGIN_NAME }}.zip,package.json"
           token: ${{ secrets.GITHUB_TOKEN }}
+          allowUpdates: true
+          replacesArtifacts: true
