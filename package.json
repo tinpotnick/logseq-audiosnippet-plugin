@@ -1,0 +1,16 @@
+{
+  "name": "logseq-plugin-audiosnippet",
+  "version": "0.0.1",
+  "main": "index.js",
+  "scripts": {},
+  "license": "MIT",
+  "dependencies": {
+    "@logseq/libs": "^0.0.17"
+  },
+  "devDependencies": {},
+  "author": "Nick Knight",
+  "description": "Play specific snippets from audio files inside Logseq",
+  "logseq": {
+    "id": "_azwc6p9g9"
+  }
+}
