@@ -1,11 +1,12 @@
-
 name: Build plugin
 
 on:
   push:
-    # Sequence of patterns matched against refs/tags
     tags:
-      - "v*.*.*" # semver
+      - "v*.*.*"
+
+permissions:
+  contents: write
 
 env:
   PLUGIN_NAME: logseq-plugin-audiosnippet
@@ -17,14 +18,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build
-        id: build
         run: |
           mkdir ${{ env.PLUGIN_NAME }}
           cp README.md LICENSE package.json icon_512x512.png index.js screenshot.png ${{ env.PLUGIN_NAME }}
           zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
           ls
-          echo "::set-output name=tag_name::$(git tag --sort version:refname | tail -n 1)"
 
       - uses: ncipollo/release-action@v1
         with:
           artifacts: "${{ env.PLUGIN_NAME }}.zip,package.json"
+          token: ${{ secrets.GITHUB_TOKEN }}
