@@ -1,7 +1,7 @@
 {
   "name": "logseq-plugin-audiosnippet",
-  "version": "0.0.1",
-  "main": "index.js",
+  "version": "0.0.9",
+  "main": "index.html",
   "scripts": {},
   "license": "MIT",
   "dependencies": {
