@@ -12,7 +12,7 @@ In a logseq block the structure should be
 
 Which is then rendered similar to
 
-![view in logseq](screenshot.png)
+![view in logseq](assets/screenshot.png)
 
 To start and stop the audio snippet
 ```

@@ -1,4 +1,6 @@
 
+import "@logseq/libs"
+
 const timestampIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;">
 <circle cx="12" cy="12" r="10"></circle>
 <polyline points="12 6 12 12 16 14"></polyline>
@@ -24,12 +26,15 @@ function main() {
 
   let keyindex = 0
 
-  logseq.App.onMacroRendererSlotted(({ slot, payload: { arguments } }) => {
+  logseq.App.onMacroRendererSlotted( ( args ) => {
+
+    const { slot, payload } = args
+    const rendererarg = payload.arguments
 
     const thisindex = keyindex++
     const key = `audioSnippet${thisindex}`
 
-    const [ name, start, stop ] = arguments[ 0 ].split( " " )
+    const [ name, start, stop ] = rendererarg[ 0 ].split( " " )
 
     let range = `${start}s–${stop}s`
     if( !stop ) {
@@ -56,8 +61,13 @@ function main() {
 
       el.addEventListener( "click", ( event ) => {
         const div = event.target.closest( 'div[haschild="true"]' )
-        const audio = div.querySelector( "audio" )
-        if ( !audio ) return
+        let audio = div.querySelector( "audio" )
+        if ( !audio ) {
+          /* this is needed if we add child nodes to the node with the bookmark */
+          audio = div.parentElement.querySelector( "audio" )
+        }
+
+        if( !audio ) return
 
         audio.currentTime = start
         audio.play()
