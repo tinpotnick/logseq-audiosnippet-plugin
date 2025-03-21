@@ -2,15 +2,21 @@
   "name": "logseq-plugin-audiosnippet",
   "version": "0.0.9",
   "main": "index.html",
-  "scripts": {},
+  "scripts": {
+    "build": "esbuild src/index.js --bundle --minify --format=esm --target=esnext --outfile=dist/index.js && cp src/index.html assets/* package.json README.md LICENSE dist/"
+  },
   "license": "MIT",
   "dependencies": {
     "@logseq/libs": "^0.0.17"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "esbuild": "^0.25.1"
+  },
   "author": "Nick Knight",
   "description": "Play specific snippets from audio files inside Logseq",
   "logseq": {
-    "id": "_azwc6p9g9"
+    "id": "_azwc6p9g9",
+    "title": "Audio Snippets",
+    "icon": "./icon_1024x1024.png"
   }
 }
