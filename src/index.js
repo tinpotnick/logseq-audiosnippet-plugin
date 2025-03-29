@@ -6,11 +6,8 @@ const timestampIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height
 <polyline points="12 6 12 12 16 14"></polyline>
 </svg>`
 
-
-function main() {
-
-  logseq.provideStyle(`
-    .audio-snippet-inline {
+const ourstyle = `
+.audio-snippet-inline {
       display: inline-flex;
       align-items: center;
       gap: 4px;
@@ -22,10 +19,88 @@ function main() {
       vertical-align: middle;
       stroke: var(--ls-link-text-color);
     }
-  `)
+`
 
+function main() {
+
+  logseq.provideStyle( ourstyle )
+
+  /**
+   * Work through the dom to find an audio element
+   * @param { * } thisdiv 
+   * @returns 
+   */
+  function findaudio( thisdiv ) {
+    const block = thisdiv.closest( 'div[haschild]' )
+    const audio = block.querySelector( "audio" )
+
+    if ( audio ) return audio
+
+    const parentblock = block.parentElement.closest( 'div[haschild]' )
+    return parentblock.querySelector( "audio" )
+  }
+
+  /**
+   * Insert the renderer text at the current cursor
+   * @param { number } start 
+   * @param { number } stop 
+   * @returns { Promise }
+   */
+  async function instertrenderertext( start, stop ) {
+
+    if( stop ) {
+      await logseq.Editor.insertAtEditingCursor( `{{renderer audio-snippet ${start} ${stop}}}` )
+      return
+    }
+    await logseq.Editor.insertAtEditingCursor( `{{renderer audio-snippet ${start}}}` )
+  }
+
+  /**
+   * Gets the current block, finds it on the dom and returns the element
+   * @returns 
+   */
+  async function getdomelforcurrentblock() {
+    const block = await logseq.Editor.getCurrentBlock()
+
+    const query = `[blockid="${block.uuid}"]`
+    return parent.document.querySelector( query )
+  }
+
+  /**
+   * Given our current position finds the audio and returns the current start
+   * @returns { Promise< number > }
+   */
+  async function getstartforclosestaudio() {
+    const blockel = await getdomelforcurrentblock()
+    if( !blockel ) return
+
+    let start = 0
+    const audio = findaudio( blockel )
+    if( audio ) {
+      start = Math.round( audio.currentTime * 100 ) / 100
+    }
+    return start
+  }
+
+  /**
+   * First slash command
+   */
+  logseq.Editor.registerSlashCommand( "Audio Snippet", async (e) => {
+    await instertrenderertext( await getstartforclosestaudio() )
+  } )
+
+  /**
+   * Second slash command
+   */
+  logseq.Editor.registerSlashCommand( "Audio Snippet with stop", async (e) => {
+    const start = await getstartforclosestaudio()
+    await instertrenderertext( start, start + 5 )
+  } )
+
+  /**
+   * Render
+   */
   let keyindex = 0
-
   logseq.App.onMacroRendererSlotted( ( args ) => {
 
     const { slot, payload } = args
@@ -60,13 +135,8 @@ function main() {
       if ( !el ) return
 
       el.addEventListener( "click", ( event ) => {
-        const div = event.target.closest( 'div[haschild="true"]' )
-        let audio = div.querySelector( "audio" )
-        if ( !audio ) {
-          /* this is needed if we add child nodes to the node with the bookmark */
-          audio = div.parentElement.querySelector( "audio" )
-        }
 
+        const audio = findaudio( event.target )
         if( !audio ) return
 
         audio.currentTime = start
