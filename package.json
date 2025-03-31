@@ -1,6 +1,6 @@
 {
   "name": "logseq-plugin-audiosnippet",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "main": "index.html",
   "scripts": {
     "build": "esbuild src/index.js --bundle --minify --format=esm --target=esnext --outfile=dist/index.js && cp src/index.html assets/* package.json README.md LICENSE dist/"
