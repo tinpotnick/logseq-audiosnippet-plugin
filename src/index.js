@@ -110,6 +110,7 @@ function main() {
     const key = `audioSnippet${thisindex}`
 
     const [ name, start, stop ] = rendererarg[ 0 ].split( " " )
+    if( "audio-snippet" !== name ) return
 
     let range = `${start}s–${stop}s`
     if( !stop ) {
