@@ -32,12 +32,17 @@ function main() {
    */
   function findaudio( thisdiv ) {
     const block = thisdiv.closest( 'div[haschild]' )
-    const audio = block.querySelector( "audio" )
 
-    if ( audio ) return audio
+    if( block ) {
+      const audio = block.querySelector( "audio" )
+      if ( audio ) return audio
+    }
 
     const parentblock = block.parentElement.closest( 'div[haschild]' )
-    return parentblock.querySelector( "audio" )
+    if( parentblock ) return parentblock.querySelector( "audio" )
+
+    const cards = thisdiv.closest( '#cards-modal' )
+    if( cards ) return cards.querySelector( "audio" )
   }
 
   /**
