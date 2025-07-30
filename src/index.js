@@ -25,6 +25,23 @@ function main() {
 
   logseq.provideStyle( ourstyle )
 
+  const root = document.querySelector( "#app" )
+  const audio = document.createElement( "audio" )
+  root.append( audio )
+
+  /**
+   * Check if we are playing or not
+   * @returns { Boolean }
+   */
+  function isaudioplaying() {
+  return (
+    audio &&
+    !audio.paused &&
+    !audio.ended &&
+    audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+  );
+}
+
   /**
    * Work through the dom to find an audio element
    * @param { * } thisdiv 
@@ -46,6 +63,74 @@ function main() {
   }
 
   /**
+   * 
+   * @param { string } markdown 
+   * @returns { Array }
+   */
+  function iscontentaref( markdown ) {
+    const refRegex = /\(\(([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)\)/gi;
+    const matches = []
+    let match
+
+    while ((match = refRegex.exec(markdown)) !== null) {
+      matches.push(match[1]) // push only the UUID part
+    }
+
+    return matches // returns an array of UUID strings
+  }
+
+
+  /**
+   * 
+   * @param { object } block 
+   * @returns { Promise{ BlockEntity | null } }
+   */
+  async function resolveblockref( block ) {
+    const refs = iscontentaref( block?.content )
+    if( 0 === refs.length ) return block
+
+    const referencedblock = await logseq.Editor.getBlock( refs[ 0 ] )
+    return referencedblock
+
+  }
+
+  /**
+   * Match markdown image or media link syntax: ![alt](../assets/filename)
+   * @param { string } markdown 
+   * @returns { string } the audio path
+   */
+  function extractaudioasset( markdown ) {
+    const mediaRegex = /!?\[.*?\]\((.*?)\)/
+    const match = markdown.match(mediaRegex)
+
+    return match ? match[1] : null // Just the path inside (...)
+  }
+
+
+    /**
+   * Work through our blocks to find an audio element
+   * @param { * } thisdiv 
+   * @returns { Promise< string > }
+   */
+  async function findaudiourl( thisuuid ) {
+
+    const block = await logseq.Editor.getBlock( thisuuid )
+
+    const parent = await logseq.Editor.getBlock( block.parent.id )
+
+    for( const child of parent.children ) {
+      if( "uuid" !== child[ 0 ] ) continue
+      const uuid = child[ 1 ]
+
+      let childblock = await logseq.Editor.getBlock( uuid )
+      childblock = await resolveblockref( childblock )
+
+      const audiourl = extractaudioasset( childblock?.content)
+      if( audiourl ) return audiourl
+    }
+  }
+
+  /**
    * Insert the renderer text at the current cursor
    * @param { number } start 
    * @param { number } stop 
@@ -61,46 +146,20 @@ function main() {
   }
 
   /**
-   * Gets the current block, finds it on the dom and returns the element
-   * @returns 
-   */
-  async function getdomelforcurrentblock() {
-    const block = await logseq.Editor.getCurrentBlock()
-
-    const query = `[blockid="${block.uuid}"]`
-    return parent.document.querySelector( query )
-  }
-
-  /**
-   * Given our current position finds the audio and returns the current start
-   * @returns { Promise< number > }
-   */
-  async function getstartforclosestaudio() {
-    const blockel = await getdomelforcurrentblock()
-    if( !blockel ) return
-
-    let start = 0
-    const audio = findaudio( blockel )
-    if( audio ) {
-      start = Math.round( audio.currentTime * 100 ) / 100
-    }
-    return start
-  }
-
-  /**
    * First slash command
    */
   logseq.Editor.registerSlashCommand( "Audio Snippet", async (e) => {
-    await instertrenderertext( await getstartforclosestaudio() )
+    await instertrenderertext( 0 )
   } )
 
   /**
    * Second slash command
    */
   logseq.Editor.registerSlashCommand( "Audio Snippet with stop", async (e) => {
-    const start = await getstartforclosestaudio()
-    await instertrenderertext( start, start + 5 )
+    await instertrenderertext( 0, 5 )
   } )
+
+  let playingurl, playingstart, playingstop
 
   logseq.provideModel( {
     /**
@@ -109,16 +168,32 @@ function main() {
      * @returns { Promise }
      */
     async playsnippet( e ) {
-      
+
       const { start, stop, blockUuid } = e.dataset
 
-      const ourspan = parent.document.querySelector( `span[data-block-uuid="${blockUuid}"]` )
+      const audiourl = await findaudiourl( blockUuid )
+      if( !audiourl ) return
 
-      const audio = findaudio( ourspan )
-      if (!audio) return
+      if( isaudioplaying() &&
+          audiourl === playingurl &&
+          playingstart === start &&
+          playingstop === stop ) {
+        audio.pause()
+        return
+      }
 
-      audio.currentTime = parseFloat(start)
+      playingurl = audiourl
+      playingstart = start
+      playingstop = stop
+
+      const graphinfo = await logseq.App.getCurrentGraph()
+      const graphpath = graphinfo?.path
+
+      const fullpath = "file://" + graphpath + "/assets/" + audiourl
+
+      audio.src = fullpath
       audio.play()
+      audio.currentTime = parseFloat( start )
 
       if (!stop) return
       const stopTime = parseFloat(stop)
@@ -130,7 +205,7 @@ function main() {
         }
       }
 
-      audio.addEventListener("timeupdate", stopHandler)
+      audio.addEventListener("timeupdate", stopHandler) 
     }
   } )
 
