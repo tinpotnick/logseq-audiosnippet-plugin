@@ -102,6 +102,38 @@ function main() {
     await instertrenderertext( start, start + 5 )
   } )
 
+  logseq.provideModel( {
+    /**
+     * repspond to our onclick
+     * @param { object } e 
+     * @returns { Promise }
+     */
+    async playsnippet( e ) {
+      
+      const { start, stop, blockUuid } = e.dataset
+
+      const ourspan = parent.document.querySelector( `span[data-block-uuid="${blockUuid}"]` )
+
+      const audio = findaudio( ourspan )
+      if (!audio) return
+
+      audio.currentTime = parseFloat(start)
+      audio.play()
+
+      if (!stop) return
+      const stopTime = parseFloat(stop)
+
+      const stopHandler = () => {
+        if (audio.currentTime >= stopTime) {
+          audio.pause()
+          audio.removeEventListener("timeupdate", stopHandler)
+        }
+      }
+
+      audio.addEventListener("timeupdate", stopHandler)
+    }
+  } )
+
   /**
    * Render
    */
@@ -123,8 +155,14 @@ function main() {
     }
 
     const template = 
-      `<span id="${key}" class="audio-snippet-inline" title="Play snippet">
-        ${timestampIcon} <span>${range}</span>
+      `<span class="audio-snippet-inline" title="Play snippet">
+        ${timestampIcon} 
+        <span id="${key}" 
+          data-on-click="playsnippet" 
+          data-start="${start}" 
+          data-stop="${stop}"
+          data-block-uuid="${payload.uuid}"
+          >${range}</span>
        </span>
       `
 
@@ -135,31 +173,6 @@ function main() {
       placement: "inline",
       reset: true
     } )
-
-    setTimeout(() => {
-      const el = parent.document.getElementById( key )
-      if ( !el ) return
-
-      el.addEventListener( "click", ( event ) => {
-
-        const audio = findaudio( event.target )
-        if( !audio ) return
-
-        audio.currentTime = start
-        audio.play()
-
-        if( !stop ) return /* optional */
-
-        const stopHandler = () => {
-          if ( audio.currentTime < stop ) return
-
-          audio.pause()
-          audio.removeEventListener( "timeupdate", stopHandler )
-        }
-      
-        audio.addEventListener( "timeupdate", stopHandler )
-      } )
-    }, 0 )
   } )
 }
 
